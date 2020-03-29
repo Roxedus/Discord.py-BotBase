@@ -1,12 +1,17 @@
-from argparse import ArgumentParser, RawTextHelpFormatter
-import os
-from utils.logging import Logger
-from utils.settings import Settings
+# Discord Packages
 import discord
 from discord.ext import commands
-import aiohttp
+
+# Bot Utilities
+from cogs.utils.logging import Logger
+from cogs.utils.settings import Settings
+
+import os
 import time
 import traceback
+from argparse import ArgumentParser, RawTextHelpFormatter
+
+import aiohttp
 
 
 def _get_prefix(bot, message):
