@@ -27,6 +27,7 @@ class Bot(commands.Bot):
         super().__init__(command_prefix=_get_prefix)
         self.logger = logger
         self.logger.debug("Logging level: %s" % level.upper())
+        self.data_dir = data_dir
 
     async def on_message(self, message):
         if message.author.bot:
@@ -37,16 +38,17 @@ class Bot(commands.Bot):
         if not hasattr(self, 'uptime'):
             self.uptime = time.time()
 
-        extension = 'cogs.misc'
-        try:
-            self.logger.debug("Loading extension %s" % extension)
-            self.load_extension(extension)
-        except Exception:
-            self.logger.exception("Loading of extension %s failed" % extension)
-
         print(f'Logged in as: {self.user.name} in {len(self.guilds)} servers.')
         print(f'Version: {discord.__version__}')
         self.logger.debug("Bot Ready")
+
+        extensions = ['cogs.misc']
+        for extension in extensions:
+            try:
+                self.logger.debug("Loading extension %s" % extension)
+                self.load_extension(extension)
+            except Exception:
+                self.logger.exception("Loading of extension %s failed" % extension)
 
     def run(self):
         try:
@@ -58,7 +60,7 @@ class Bot(commands.Bot):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(prog='Shite Music Bot',
+    parser = ArgumentParser(prog='BaseBot',
                             description='Discord bot base',
                             formatter_class=RawTextHelpFormatter)
 
@@ -83,4 +85,3 @@ if __name__ == '__main__':
     logger.debug("Data folder: %s" % data_dir)
     settings = Settings(data_dir=data_dir)
     Bot().run()
-
