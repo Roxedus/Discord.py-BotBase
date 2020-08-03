@@ -5,13 +5,12 @@ from discord.ext import commands
 # Bot Utilities
 from cogs.utils.logging import Logger
 from cogs.utils.settings import Settings
+from cogs.utils.bot_version import Bot_version
 
 import os
 import time
 import traceback
 from argparse import ArgumentParser, RawTextHelpFormatter
-
-import aiohttp
 
 
 def _get_prefix(bot, message):
@@ -28,6 +27,10 @@ class Bot(commands.Bot):
         self.logger = logger
         self.logger.debug("Logging level: %s" % level.upper())
         self.data_dir = data_dir
+        try:
+            self.settings = settings.extra
+        except AttributeError:
+            pass
 
     async def on_message(self, message):
         if message.author.bot:
@@ -35,14 +38,21 @@ class Bot(commands.Bot):
         await self.process_commands(message)
 
     async def on_ready(self):
-        if not hasattr(self, 'uptime'):
+        if not hasattr(self, "uptime"):
             self.uptime = time.time()
 
-        print(f'Logged in as: {self.user.name} in {len(self.guilds)} servers.')
-        print(f'Version: {discord.__version__}')
-        self.logger.debug("Bot Ready")
+        login_msg = [
+            f"Logged in as: {self.user.name} in {len(self.guilds)} servers.",
+            f"Discord.py Version: {discord.__version__}",
+            f"Bot version: {Bot_version}"
+        ]
 
-        extensions = ['cogs.misc']
+        for msg in login_msg:
+            if level not in ["debug", "info"]:
+                print(msg)
+            self.logger.debug("%s" % msg)
+
+        extensions = ["cogs.misc", "cogs.errors"]
         for extension in extensions:
             try:
                 self.logger.debug("Loading extension %s" % extension)
@@ -59,29 +69,27 @@ class Bot(commands.Bot):
             print(e)
 
 
-if __name__ == '__main__':
-    parser = ArgumentParser(prog='BaseBot',
-                            description='Discord bot base',
+if __name__ == "__main__":
+    parser = ArgumentParser(prog="BaseBot",
+                            description="Discord bot base",
                             formatter_class=RawTextHelpFormatter)
 
-    parser.add_argument("-D", "--debug", action='store_true', help='Sets debug to true')
-    parser.add_argument("-l", "--level", help='Sets debug level',
+    parser.add_argument("-D", "--debug", action="store_true", help="Sets debug to true")
+    parser.add_argument("-l", "--level", help="Sets debug level",
                         choices=["critical", "error", "warning", "info", "debug"], default="warning")
-    parser.add_argument("-d", "--data-directory", help='Define an alternate data directory location', default="data")
-    parser.add_argument("-f", "--log-to-file", action='store_true', help='Save log to file', default=True)
+    parser.add_argument("-d", "--data-directory", help="Define an alternate data directory location", default="data")
+    parser.add_argument("-f", "--log-to-file", action="store_true", help="Save log to file", default=True)
 
     args = parser.parse_args()
 
-    level = args.level
-    data_dir = args.data_directory
+    data_dir = os.environ.get("BOT_DATA_DIR", args.data_directory)
+    level = os.environ.get("BOT_LOG_LEVEL", args.level)
+    to_file = os.environ.get("BOT_LOG_TO_FILE", args.log_to_file)
 
-    if args.debug or os.environ.get('debug'):
+    if os.environ.get("BOT_DEBUG", args.debug):
         level = "debug"
 
-    if args.data_directory:
-        data_dir = str(args.data_directory)
-
-    logger = Logger(location=data_dir, level=level, to_file=args.log_to_file).logger
+    logger = Logger(location=data_dir, level=level, to_file=to_file).logger
     logger.debug("Data folder: %s" % data_dir)
     settings = Settings(data_dir=data_dir)
     Bot().run()
